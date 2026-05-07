@@ -1,0 +1,231 @@
+{
+  "name": "IA chat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "01304292-f099-4232-b7d2-8147e9dff548",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        0
+      ],
+      "id": "07b37657-3f4d-40e6-bd13-305648983791",
+      "name": "Webhook",
+      "webhookId": "01304292-f099-4232-b7d2-8147e9dff548"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "Eres un agente de IA de soporte para un responsable de ventas. Le ayudas con la información de leads, clientes potenciales, etc. En general métricas del negocio.\nAdemás de eso las actividades que se realizan, como reuniones, correos, envíos de propuestas, demos, llamadas, seguimientos presentaciones etc.. \nEstas conectado a una base de datos MYSQL en el cual le vas a hacer consultas cuando necesites datos\n\nTu función es responder preguntas del usuario usando datos reales de la base de datos. Si el usuario pregunta por clientes, usuarios, deals, actividades, llamadas, correos, reuniones, propuestas, demos, seguimientos, responsables o etapas, debes consultar la base de datos antes de responder.\n\nTablas disponibles:\n- users\n- clients\n- deals\n- activities\n- activity_types\n- stages\n\n\n- No inventes columnas.\nRelaciones principales:\n- activities.customer_id = clients.id\n- activities.deal_id = deals.id\n- activities.owner_id = users.id\n- deals.stage_id = stages.id\n\nConsultas seguras:\n- Usuarios: SELECT * FROM users LIMIT 10;\n- Clientes: SELECT * FROM clients LIMIT 10;\n- Deals: SELECT * FROM deals LIMIT 10;\n- Actividades: SELECT * FROM activities LIMIT 10;\n- Llamadas: SELECT * FROM activities WHERE type = 'call' LIMIT 10;\n- Pendientes: SELECT * FROM activities WHERE status = 'pending' LIMIT 10;\nGuía de tablas:\n- users: usuarios o responsables del equipo.\n- clients: clientes, empresas o contactos.\n- deals: oportunidades de negocio, ventas o tratos.\n- stages: etapas del pipeline comercial.\n- activity_types: tipos de actividades.\n- activities: actividades comerciales como llamadas, correos, reuniones, notas, seguimientos, demos y propuestas.\n\nSi una consulta falla por una columna inexistente, revisa la estructura con SHOW COLUMNS y vuelve a intentar usando las columnas reales.\n\n",
+          "autoSaveHighlightedData": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "cd27d5e7-ad0f-44f9-936c-cb5b2299a5af",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "4647ff93-6fa1-4a03-8751-e1d14cab73ac",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FLA4QMi92Rd4Q6AH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.webhookUrl }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "3f9d1a42-fcd0-4a13-9ef8-8c608d8daa58",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n\n  \"response\": {{ JSON.stringify($json.output) }}\n\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        560,
+        0
+      ],
+      "id": "318f084d-b87d-451c-a3a0-f8715fa3c8cf",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Usa esta herramienta para consultar la base de datos MySQL del CRM. \nSolo puedes ejecutar consultas SELECT. \nLa base de datos tiene las tablas: users, clients, deals, activities, stages y activity_types\nen actividades podras encontrar . \nNo uses INSERT, UPDATE, DELETE, DROP ni ALTER.\nUsa LIMIT cuando consultes listados.",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('query', 'SQL query to execute against the database') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySqlTool",
+      "typeVersion": 2.5,
+      "position": [
+        496,
+        208
+      ],
+      "id": "c6a216c7-63ee-4eb2-9f2e-f7d7fa7d96a7",
+      "name": "Execute a SQL query in MySQL",
+      "credentials": {
+        "mySql": {
+          "id": "FJxwDPaown91WU7L",
+          "name": "MySQL account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "arbolto.app.n8n.cloud",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+            "content-length": "18",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "es-ES,es;q=0.9",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "2800:e2:b680:f93:92b1:a352:1af:da47",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "CO",
+            "cf-ray": "9f50badb5c85087c-MIA",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "origin": "http://localhost:5173",
+            "priority": "u=1, i",
+            "referer": "http://localhost:5173/",
+            "sec-ch-ua": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "2800:e2:b680:f93:92b1:a352:1af:da47, 104.23.248.200",
+            "x-forwarded-host": "arbolto.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-47-659485895b-4sgbv",
+            "x-is-trusted": "yes",
+            "x-real-ip": "2800:e2:b680:f93:92b1:a352:1af:da47"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "message": "hola"
+          },
+          "webhookUrl": "https://arbolto.app.n8n.cloud/webhook/01304292-f099-4232-b7d2-8147e9dff548",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query in MySQL": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "300596bc-d682-430d-9c5b-02bb06570000",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "274a35f9d49e4b19c1982e5301efd76d55ed6875f45ddbfe22dd74913d11c530"
+  },
+  "id": "lcjUNmRQAU0jPLye",
+  "tags": []
+}
